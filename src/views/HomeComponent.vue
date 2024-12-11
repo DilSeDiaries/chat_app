@@ -2,11 +2,11 @@
   <v-container fluid>
     <v-row>
 
-      <v-dialog v-model="showEmailDialogue">
+      <v-dialog v-model="showEmailDialogue"  >
         <v-container class="fill-height" fluid>
           <v-row justify="center" align="center">
             <v-col cols="12" md="8" lg="6">
-              <v-card elevation="3">
+              <v-card elevation="3" class="scrollableContentEmail" max-height="600">
                 <v-card-title>Email Page</v-card-title>
                 <v-card-subtitle>Compose and send an email</v-card-subtitle>
                 <v-card-text>
@@ -17,8 +17,12 @@
                     <v-text-field v-model="email.subject" label="Subject" placeholder="Enter email subject" required
                       :rules="[rules.required]"></v-text-field>
 
-                    <v-textarea v-model="email.body" label="Message" placeholder="Write your message here" rows="6"
+                    <v-textarea  v-model="email.body" label="Message" placeholder="Write your message here" rows="6"
                       auto-grow required :rules="[rules.required]"></v-textarea>
+
+                      
+                    <v-text-field v-model="password" label="Password" hint="Please login to gmail and activate your app password" placeholder="Please enter your email password" required
+                      :rules="[rules.required]"></v-text-field>
 
 
                     <v-card-action style="display: flex;justify-content:space-around">
@@ -90,7 +94,7 @@
               <v-card style="margin-bottom: 2%;" width="100%" v-for="i in feedData" :key="i" :title="i.data['title']"
                 :subtitle="`${i.created_at}/${i.data['genra']}`">
                 <div style="display: flex;justify-content: center;">
-                  <!-- <img src="" alt="">      -->
+                  <img :src="'http://127.0.0.1:5000/static/Images/' + i.post_id + '/img'" alt="Cant find">
                 </div>
                 <v-card-text>
                   <span>{{ i.data['content'] }}</span>
@@ -99,8 +103,8 @@
                   <v-btn @click="likePost(i)"><v-icon color="red">mdi-heart-circle</v-icon>Like ({{ i.like_by ?
                     i.like_by.length : '' }})</v-btn>
                   <v-btn @click="i.comment_status = true"><v-icon color="grey">mdi-comment</v-icon>Comment ({{
-                    i.comments.length }})</v-btn>
-                  <v-btn @click="showEmailDialogue = true"><v-icon color="primary">mdi-share</v-icon>Share</v-btn>
+                    i.comments ? i.comments.length :''}})</v-btn>
+                  <v-btn @click="showEmailDialogueCall(i)"><v-icon color="primary">mdi-share</v-icon>Share</v-btn>
                 </v-card-actions>
 
                 <v-dialog v-model="i.comment_status" width="500px">
@@ -163,7 +167,7 @@
           <v-col>
             <v-select required label="Genra" v-model="postData.genra"
               :rules="[value => !!value || 'This field is required']"
-              :items="['Music', 'Movie', 'Sports', 'Blog', 'Education', 'Anime']" outlined
+              :items="['Music', 'Movie', 'Sports', 'Blog', 'Education', 'Anime','News']" outlined
               hint="please select the Genra of the post">
             </v-select>
           </v-col>
@@ -171,7 +175,7 @@
 
         <v-row>
           <v-col>
-            <v-file-input required label="Image Upload" chips multiple accept="image/*"
+            <v-file-input required label="Image Upload" chips multiple accept=".jpg"
               :rules="[value => !!value || 'This field is required']" v-model="image"></v-file-input>
           </v-col>
         </v-row>
@@ -197,7 +201,9 @@ export default {
         to: "",
         subject: "",
         body: "",
+        title:""
       },
+      password:'',
       rules: {
         required: (value) => !!value || "This field is required.",
         email: (value) =>
@@ -245,9 +251,33 @@ export default {
     },
   },
   methods: {
+    showEmailDialogueCall(data){
+      this.showEmailDialogue = true;
+      console.log(data.data['content']);
+      console.log(data.data['title']);
+      this.email.body = data.data['content'];
+      this.email.subject = data.data['title'];
+      this.email.title = data.data['title']
+    },
+
     sendEmail() {
       alert(`Email sent to ${this.email.to}`);
-      // Add API call or email sending logic here
+      let userdata = JSON.parse(sessionStorage.getItem('userData'))
+      axios.post('http://127.0.0.1:5000/sendMail', {
+        name: userdata['name'],
+        from_email: userdata['email'],
+        email_data:this.email,
+        password:this.password 
+
+      }).then(response => {
+        console.log('Response:', response);
+        
+
+      }).catch(error => {
+        console.error('Error:', error);
+        
+      });
+
       this.resetForm();
       this.showEmailDialogue = false
     },
@@ -419,5 +449,11 @@ export default {
   /* Make the content scrollable */
   padding: 10px;
   /* Add some padding for aesthetics */
+}
+
+.scrollableContentEmail {
+  max-height: 80vh; /* Ensures the dialog does not exceed the viewport */
+  overflow-y: auto; /* Enables vertical scrolling */
+  padding: 16px;    /* Adds some padding */
 }
 </style>
